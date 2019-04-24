@@ -1,6 +1,6 @@
 {
   "name": "@wirelineio/apollo-link-kappa",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Apollo Link for Kappa Views.",
   "repository": "https://github.com/wirelineio/dsuite",
   "license": "GPL-3.0",
