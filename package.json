@@ -1,0 +1,36 @@
+{
+  "name": "@wirelineio/apollo-link-kappa",
+  "version": "0.1.12",
+  "description": "Apollo Link for Kappa Views.",
+  "repository": "https://github.com/wirelineio/dsuite",
+  "license": "UNLICENSED",
+  "main": "src/index",
+  "module": "dist/es/index",
+  "scripts": {
+    "build": "npm run clean && babel ./src --out-dir ./dist/es --ignore \"**/*.test.js\"",
+    "clean": "rm -rf dist",
+    "lint": "eslint ./src",
+    "test": "jest --verbose"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ],
+  "dependencies": {
+    "apollo-link": "^1.2.11",
+    "apollo-utilities": "^1.2.1",
+    "graphql": "^14.1.1",
+    "graphql-anywhere": "^4.2.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.0.0",
+    "@babel/core": "^7.0.0",
+    "@babel/plugin-proposal-class-properties": "^7.3.0",
+    "@babel/preset-env": "^7.0.0",
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.11.0",
+    "jest": "^24.7.1"
+  }
+}
