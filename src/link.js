@@ -8,6 +8,7 @@ import { visit, BREAK } from 'graphql/language/visitor';
 import { graphql } from 'graphql-anywhere/lib/async';
 import { print } from 'graphql';
 
+// TODO(burdon): ???
 function normalizeTypeDefs(typeDefs) {
   const defs = Array.isArray(typeDefs) ? typeDefs : [typeDefs];
 
@@ -47,23 +48,29 @@ const setTypename = (data, fieldName) => {
  */
 export class KappaLink extends ApolloLink {
 
-  constructor({ kappa, resolvers, typeDefs, fragmentMatcher }) {
-
+  /**
+   * @param {{ api }} kappa
+   * @param {{ swarm }} framework
+   * @param resolvers
+   * @param fragmentMatcher
+   * @param [typeDefs]
+   */
+  constructor({ kappa, framework, resolvers, fragmentMatcher, typeDefs }) {
     super();
 
-    this.kappa = kappa;
-    this.resolvers = resolvers;
-    this.typeDefs = typeDefs;
-    this.fragmentMatcher = fragmentMatcher;
+    // TODO(burdon): Assert non-optional.
+
+    this._kappa = kappa;
+    this._framework = framework;
+    this._resolvers = resolvers;
+    this._fragmentMatcher = fragmentMatcher;
+    this._typeDefs = typeDefs;
   }
 
   // https://www.apollographql.com/docs/link/overview.html#request
   request(operation, forward) {
-    const { kappa, typeDefs } = this;
-
-    // TODO(burdon): Not set.
-    if (typeDefs) {
-      const definition = normalizeTypeDefs(typeDefs);
+    if (this._typeDefs) {
+      const definition = normalizeTypeDefs(this._typeDefs);
       const directives = 'directive @kappa on FIELD';
 
       operation.setContext(({ schemas = [] }) => ({
@@ -73,7 +80,8 @@ export class KappaLink extends ApolloLink {
 
     operation.setContext(prevContext => ({
       ...prevContext,
-      kappa
+      kappa: this._kappa,
+      framework: this._framework
     }));
 
     // Ignore if not a kappa query.
@@ -82,7 +90,7 @@ export class KappaLink extends ApolloLink {
     }
 
     const def = getMainDefinition(operation.query);
-    const resolvers = typeof this.resolvers === 'function' ? this.resolvers() : this.resolvers;
+    const resolvers = typeof this._resolvers === 'function' ? this._resolvers() : this._resolvers;
     const type = capitalizeFirstLetter(def.operation || 'Query');
     // console.log('ApolloLink.request:', type + ':' + operation.operationName);
 
@@ -104,15 +112,13 @@ export class KappaLink extends ApolloLink {
 
   // Queries must be set with police: 'network-only till we figure out a better way to return all items everytime.'
   runQuery({ type, resolvers, operation }) {
-    const { kappa, fragmentMatcher } = this;
-
     const resolver = async (fieldName, rootValue = {}, args, context, info) => {
       const { resultKey, directives } = info;
 
       // If we set @kappa(method) then directive { kappa: { view, method } } otherwise { kappa: null }
       if (directives && directives.kappa) {
         const { view, method } = directives.kappa;
-        return kappa.api[view][method](args || undefined);
+        return this._kappa.api[view][method](args || undefined);
       }
 
       // Support GraphQL aliases.
@@ -146,9 +152,9 @@ export class KappaLink extends ApolloLink {
     return new Observable((observer) => {
       const observerErrorHandler = observer.error.bind(observer);
 
-      kappa.ready(() => {
+      this._kappa.ready(() => {
         graphql(resolver, operation.query, {}, operation.getContext(), operation.variables, {
-          fragmentMatcher
+          fragmentMatcher: this._fragmentMatcher
         })
           .then((nextData) => {
             observer.next({
@@ -163,7 +169,6 @@ export class KappaLink extends ApolloLink {
   }
 
   runSubscription({ type, resolvers, operation, forward }) {
-    const { kappa } = this;
     const subscriptionResolvers = resolvers[type] || {};
 
     let field = null;
@@ -198,10 +203,11 @@ export class KappaLink extends ApolloLink {
             next(data);
           }
         };
-        kappa.api[view].events.on(event, onEvent);
+
+        this._kappa.api[view].events.on(event, onEvent);
 
         return () => {
-          kappa.api[view].events.removeListener(event, onEvent);
+          this._kappa.api[view].events.removeListener(event, onEvent);
         };
       };
     } else {
@@ -215,9 +221,9 @@ export class KappaLink extends ApolloLink {
     return {
       subscribe: (observer) => {
         const observerErrorHandler = observer.error.bind(observer);
-        let unsubscribe;
 
-        kappa.ready(() => {
+        let unsubscribe;
+        this._kappa.ready(() => {
           unsubscribe = resolver && resolver({}, operation.variables, {
             ...operation.getContext(),
 
@@ -239,7 +245,7 @@ export class KappaLink extends ApolloLink {
             }
           }
         };
-      },
+      }
     };
   }
 }
