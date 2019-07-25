@@ -27,12 +27,13 @@ const capitalizeFirstLetter = str => str.charAt(0).toUpperCase() + str.slice(1);
 const setTypename = (data, fieldName) => {
   if (data && typeof data === 'object' && !data.__typename) {
     if (data instanceof Array) {
-      return data.map(item => {
+      return data.map((item) => {
+        // eslint-disable-next-line no-param-reassign
         item.__typename = capitalizeFirstLetter(fieldName);
         return item;
       });
     }
-
+    // eslint-disable-next-line no-param-reassign
     data.__typename = capitalizeFirstLetter(fieldName);
   }
 
